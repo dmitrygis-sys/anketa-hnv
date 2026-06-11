@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анкета — Отделение новорождённых</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --cream: #faf7f2;
+    --warm-white: #fffef9;
+    --sage: #7a9e8e;
+    --sage-light: #a8c4b6;
+    --sage-dark: #4e7264;
+    --blush: #e8c4b0;
+    --blush-dark: #c8906a;
+    --text: #2a2420;
+    --text-muted: #7a6e68;
+    --border: #ddd5c8;
+    --shadow: rgba(74, 100, 87, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); font-family: 'Inter', sans-serif; color: var(--text); min-height: 100vh; }
+
+  .hero {
+    background: linear-gradient(160deg, var(--sage-dark) 0%, var(--sage) 60%, var(--sage-light) 100%);
+    padding: 48px 24px 40px; text-align: center; position: relative; overflow: hidden;
+  }
+  .hero::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.06); }
+  .hero::after  { content:''; position:absolute; bottom:-60px; left:-20px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,0.04); }
+  .hero-icon { font-size:44px; display:block; margin-bottom:12px; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.2)); }
+  .hero h1 { font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:300; color:#fff; letter-spacing:0.02em; line-height:1.3; margin-bottom:8px; }
+  .hero p  { color:rgba(255,255,255,0.8); font-size:0.82rem; font-weight:300; letter-spacing:0.05em; text-transform:uppercase; }
+  .anon-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:5px 14px; color:rgba(255,255,255,0.9); font-size:0.75rem; margin-top:14px; letter-spacing:0.03em; }
+
+  .container { max-width:680px; margin:0 auto; padding:0 16px 60px; }
+
+  .intro-card { background:var(--warm-white); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin:24px 0 20px; box-shadow:0 2px 12px var(--shadow); font-family:'Cormorant Garamond',serif; font-size:1.3rem; font-weight:700; font-style:italic; color:var(--text); line-height:1.75; }
+
+  .q-block { background:var(--warm-white); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:14px; box-shadow:0 2px 12px var(--shadow); transition:box-shadow 0.2s; }
+  .q-block:focus-within { box-shadow:0 4px 20px rgba(74,100,87,0.18); border-color:var(--sage-light); }
+  .q-num  { font-size:0.78rem; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:#c07830; margin-bottom:8px; }
+  .q-text { font-family:'Cormorant Garamond',serif; font-size:1.22rem; font-weight:400; color:var(--text); line-height:1.5; margin-bottom:16px; }
+
+  .options { display:flex; flex-direction:column; gap:8px; }
+  .option-label { display:flex; align-items:flex-start; gap:12px; cursor:pointer; padding:10px 14px; border-radius:10px; border:1px solid transparent; transition:background 0.15s,border-color 0.15s; }
+  .option-label:hover { background:rgba(122,158,142,0.07); border-color:var(--sage-light); }
+  .option-label input[type="radio"] { appearance:none; -webkit-appearance:none; width:18px; height:18px; min-width:18px; border-radius:50%; border:2px solid var(--border); background:#fff; cursor:pointer; margin-top:2px; transition:border-color 0.15s,background 0.15s; position:relative; }
+  .option-label input[type="radio"]:checked { border-color:var(--sage); background:var(--sage); }
+  .option-label input[type="radio"]:checked::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:#fff; }
+  .option-label.selected { background:rgba(122,158,142,0.1); border-color:var(--sage-light); }
+  .option-letter { font-size:0.82rem; font-weight:700; color:#c07830; letter-spacing:0.05em; min-width:16px; padding-top:2px; }
+  .option-text   { font-size:0.97rem; color:var(--text); line-height:1.45; }
+
+  textarea { width:100%; border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-family:'Inter',sans-serif; font-size:0.87rem; color:var(--text); background:var(--cream); resize:vertical; min-height:80px; outline:none; transition:border-color 0.15s,background 0.15s; line-height:1.55; }
+  textarea:focus { border-color:var(--sage); background:#fff; }
+  textarea::placeholder { color:#c07830; opacity:0.75; font-style:italic; }
+  .req { color:#c87060; margin-left:2px; }
+
+  .submit-wrap { margin-top:28px; text-align:center; }
+  .btn-submit { background:linear-gradient(135deg,var(--sage-dark),var(--sage)); color:#fff; border:none; border-radius:14px; padding:16px 44px; font-family:'Inter',sans-serif; font-size:0.92rem; font-weight:500; letter-spacing:0.04em; cursor:pointer; transition:transform 0.15s,box-shadow 0.15s,opacity 0.15s; box-shadow:0 4px 20px rgba(74,100,87,0.3); }
+  .btn-submit:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(74,100,87,0.4); }
+  .btn-submit:active { transform:translateY(0); }
+  .btn-submit:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+
+  .status { margin-top:16px; padding:12px 18px; border-radius:10px; font-size:0.85rem; text-align:center; display:none; }
+  .status.success { background:rgba(122,158,142,0.15); border:1px solid var(--sage-light); color:var(--sage-dark); display:block; }
+  .status.error   { background:rgba(200,100,80,0.1); border:1px solid #e0a898; color:#9a4030; display:block; }
+  .status.loading { background:rgba(122,158,142,0.08); border:1px solid var(--border); color:var(--text-muted); display:block; }
+
+  /* Success screen */
+  .success-screen { display:none; text-align:center; padding:60px 24px; }
+  .success-screen .big-icon { font-size:72px; margin-bottom:20px; }
+  .success-screen h2 { font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; margin-bottom:12px; color:var(--sage-dark); }
+  .success-screen p  { color:var(--text-muted); font-size:0.9rem; line-height:1.7; margin-bottom:24px; }
+  .btn-pdf { display:inline-flex; align-items:center; gap:8px; background:var(--warm-white); color:var(--sage-dark); border:1.5px solid var(--sage-light); border-radius:12px; padding:12px 28px; font-family:'Inter',sans-serif; font-size:0.88rem; font-weight:500; cursor:pointer; transition:background 0.15s,box-shadow 0.15s; box-shadow:0 2px 10px var(--shadow); text-decoration:none; }
+  .btn-pdf:hover { background:rgba(122,158,142,0.1); box-shadow:0 4px 16px var(--shadow); }
+
+  .footer-note { text-align:center; font-size:0.75rem; color:var(--text-muted); margin-top:32px; line-height:1.6; letter-spacing:0.02em; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="hero-icon">🌸</span>
+  <h1>Отделение новорождённых</h1>
+  <p>Анкета качества медицинской помощи</p>
+  <span class="anon-badge">🔒 Анонимно · Конфиденциально</span>
+</div>
+
+<div class="container">
+<div id="form-section">
+
+  <div class="intro-card">
+    Дорогая мама! От всего сердца поздравляем Вас с рождением ребёнка!<br>
+    В целях улучшения нашей работы просим ответить на несколько вопросов. Опрос полностью анонимный, ответы будут использоваться только для улучшения работы.
+  </div>
+
+  <!-- Q1 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 1</div>
+    <div class="q-text">Врачи и медсестры понятно объясняли состояние ребёнка, план ухода и лечение <span class="req">*</span></div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q1" value="А) Да, всё было предельно понятно"><span class="option-letter">А</span><span class="option-text">Да, всё было предельно понятно</span></label>
+      <label class="option-label"><input type="radio" name="q1" value="Б) В основном понятно, но некоторые моменты остались неясны"><span class="option-letter">Б</span><span class="option-text">В основном понятно, но некоторые моменты остались неясны</span></label>
+      <label class="option-label"><input type="radio" name="q1" value="В) Скорее непонятно, пришлось переспрашивать или догадываться"><span class="option-letter">В</span><span class="option-text">Скорее непонятно, пришлось переспрашивать или догадываться</span></label>
+      <label class="option-label"><input type="radio" name="q1" value="Г) Нет, объяснения были запутанными или их почти не было"><span class="option-letter">Г</span><span class="option-text">Нет, объяснения были запутанными или их почти не было</span></label>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 2</div>
+    <div class="q-text">Насколько комфортным для Вас было пребывание в отделении? <span class="req">*</span></div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q2" value="А) Очень комфортно, чувствовала себя как дома"><span class="option-letter">А</span><span class="option-text">Очень комфортно, чувствовала себя как дома</span></label>
+      <label class="option-label"><input type="radio" name="q2" value="Б) Скорее комфортно, но отдельные моменты можно улучшить"><span class="option-letter">Б</span><span class="option-text">Скорее комфортно, но отдельные моменты можно улучшить</span></label>
+      <label class="option-label"><input type="radio" name="q2" value="В) Средне, ничего особенного, но и не дискомфортно"><span class="option-letter">В</span><span class="option-text">Средне, ничего особенного, но и не дискомфортно</span></label>
+      <label class="option-label"><input type="radio" name="q2" value="Г) Скорее некомфортно"><span class="option-letter">Г</span><span class="option-text">Скорее некомфортно</span></label>
+      <label class="option-label"><input type="radio" name="q2" value="Д) Совсем некомфортно, тяжело находиться"><span class="option-letter">Д</span><span class="option-text">Совсем некомфортно, тяжело находиться</span></label>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 3</div>
+    <div class="q-text">Что сделало бы ваше пребывание заметно комфортнее?</div>
+    <textarea id="q3" placeholder="Ваш ответ..."></textarea>
+  </div>
+
+  <!-- Q4 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 4</div>
+    <div class="q-text">Относился ли персонал к Вам и Вашему ребёнку с заботой и уважением? <span class="req">*</span></div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q4" value="А) Да"><span class="option-letter">А</span><span class="option-text">Да</span></label>
+      <label class="option-label"><input type="radio" name="q4" value="Б) Нет"><span class="option-letter">Б</span><span class="option-text">Нет</span></label>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 5</div>
+    <div class="q-text">Как бы вы оценили уровень шума в отделении? <span class="req">*</span></div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q5" value="А) Всегда тихо"><span class="option-letter">А</span><span class="option-text">Всегда тихо</span></label>
+      <label class="option-label"><input type="radio" name="q5" value="Б) Тихо только ночью"><span class="option-letter">Б</span><span class="option-text">Тихо только ночью</span></label>
+      <label class="option-label"><input type="radio" name="q5" value="В) В основном тихо, но временами шумно"><span class="option-letter">В</span><span class="option-text">В основном тихо, но временами шумно</span></label>
+      <label class="option-label"><input type="radio" name="q5" value="Г) Чаще громко, что мешает отдыхать"><span class="option-letter">Г</span><span class="option-text">Чаще громко, что мешает отдыхать</span></label>
+      <label class="option-label"><input type="radio" name="q5" value="Д) Громко всегда"><span class="option-letter">Д</span><span class="option-text">Громко всегда</span></label>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 6</div>
+    <div class="q-text">Насколько Вы чувствовали эмоциональную поддержку со стороны медицинского персонала? <span class="req">*</span></div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q6" value="А) Очень плохое, меня игнорировали"><span class="option-letter">А</span><span class="option-text">Очень плохое, меня игнорировали</span></label>
+      <label class="option-label"><input type="radio" name="q6" value="Б) Скорее равнодушное, редко поддерживали"><span class="option-letter">Б</span><span class="option-text">Скорее равнодушное, редко поддерживали</span></label>
+      <label class="option-label"><input type="radio" name="q6" value="В) Нормальное, но без тёплых эмоций"><span class="option-letter">В</span><span class="option-text">Нормальное, но без тёплых эмоций</span></label>
+      <label class="option-label"><input type="radio" name="q6" value="Г) Внимательное, меня выслушивали и успокаивали"><span class="option-letter">Г</span><span class="option-text">Внимательное, меня выслушивали и успокаивали</span></label>
+      <label class="option-label"><input type="radio" name="q6" value="Д) Искреннее и тёплое, я чувствовала заботу постоянно"><span class="option-letter">Д</span><span class="option-text">Искреннее и тёплое, я чувствовала заботу постоянно</span></label>
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 7</div>
+    <div class="q-text">Что лично для Вас было самым важным в эмоциональной поддержке (или чего не хватало)?</div>
+    <textarea id="q7" placeholder="Ваш ответ..."></textarea>
+  </div>
+
+  <!-- Q8 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 8</div>
+    <div class="q-text">Общая атмосфера в отделении была спокойной и вызывала доверие? <span class="req">*</span></div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q8" value="А) Да"><span class="option-letter">А</span><span class="option-text">Да</span></label>
+      <label class="option-label"><input type="radio" name="q8" value="Б) Нет"><span class="option-letter">Б</span><span class="option-text">Нет</span></label>
+    </div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 9</div>
+    <div class="q-text">С какой неонатальной медицинской сестрой Вы чувствовали себя более комфортно и спокойно?</div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q9" value="А) Зайцева Ольга Николаевна"><span class="option-letter">А</span><span class="option-text">Зайцева Ольга Николаевна</span></label>
+      <label class="option-label"><input type="radio" name="q9" value="Б) Журавлёва Ирина Николаевна"><span class="option-letter">Б</span><span class="option-text">Журавлёва Ирина Николаевна</span></label>
+      <label class="option-label"><input type="radio" name="q9" value="В) Компанцева Ирина Геннадьевна"><span class="option-letter">В</span><span class="option-text">Компанцева Ирина Геннадьевна</span></label>
+      <label class="option-label"><input type="radio" name="q9" value="Г) Гребнева Елена Николаевна"><span class="option-letter">Г</span><span class="option-text">Гребнева Елена Николаевна</span></label>
+      <label class="option-label"><input type="radio" name="q9" value="Д) Черникина Юлия Владимировна"><span class="option-letter">Д</span><span class="option-text">Черникина Юлия Владимировна</span></label>
+      <label class="option-label"><input type="radio" name="q9" value="Е) Грачёва Людмила Николаевна"><span class="option-letter">Е</span><span class="option-text">Грачёва Людмила Николаевна</span></label>
+      <label class="option-label"><input type="radio" name="q9" value="Ж) Ромодина Наталья Викторовна"><span class="option-letter">Ж</span><span class="option-text">Ромодина Наталья Викторовна</span></label>
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 10</div>
+    <div class="q-text">Насколько в целом Вы остались довольны тем, как прошла выписка Вас и Вашего малыша? <span class="req">*</span></div>
+    <div class="options">
+      <label class="option-label"><input type="radio" name="q10" value="А) Всё прошло идеально, даже лучше, чем ожидала"><span class="option-letter">А</span><span class="option-text">Всё прошло идеально, даже лучше, чем ожидала</span></label>
+      <label class="option-label"><input type="radio" name="q10" value="Б) В целом очень хорошо, остались только положительные эмоции"><span class="option-letter">Б</span><span class="option-text">В целом очень хорошо, остались только положительные эмоции</span></label>
+      <label class="option-label"><input type="radio" name="q10" value="В) Хорошо, но были небольшие моменты, которые можно улучшить"><span class="option-letter">В</span><span class="option-text">Хорошо, но были небольшие моменты, которые можно улучшить</span></label>
+      <label class="option-label"><input type="radio" name="q10" value="Г) Скорее удовлетворительно, но хотелось бы больше внимания и комфорта"><span class="option-letter">Г</span><span class="option-text">Скорее удовлетворительно, но хотелось бы больше внимания и комфорта</span></label>
+      <label class="option-label"><input type="radio" name="q10" value="Д) Выписка прошла некомфортно, остались неприятные впечатления"><span class="option-letter">Д</span><span class="option-text">Выписка прошла некомфортно, остались неприятные впечатления</span></label>
+    </div>
+  </div>
+
+  <!-- Q11 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 11</div>
+    <div class="q-text">Что мы делаем лучше всего? Что Вам особенно запомнилось и понравилось?</div>
+    <textarea id="q11" placeholder="Ваш ответ..."></textarea>
+  </div>
+
+  <!-- Q12 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 12</div>
+    <div class="q-text">Если бы Вы могли изменить одну вещь в организации пребывания в нашем отделении, что бы это было?</div>
+    <textarea id="q12" placeholder="Ваш ответ... (этот ответ особенно важен для нас)"></textarea>
+  </div>
+
+  <!-- Q13 -->
+  <div class="q-block">
+    <div class="q-num">Вопрос 13</div>
+    <div class="q-text">Что, с Вашей точки зрения, нам следует изменить или улучшить в нашей работе?</div>
+    <textarea id="q13" placeholder="Ваш ответ..."></textarea>
+  </div>
+
+  <div class="submit-wrap">
+    <button class="btn-submit" id="submitBtn" onclick="submitForm()">✉️ Отправить анкету</button>
+    <div id="statusMsg" class="status"></div>
+  </div>
+
+  <p class="footer-note">
+    Благодарим Вас за ответы!<br>
+    Желаем крепкого здоровья и счастливого материнства! 🌸<br>
+    Спасибо, что помогаете нам становиться лучше.
+  </p>
+</div><!-- /form-section -->
+
+<!-- Success screen -->
+<div class="success-screen" id="successScreen">
+  <div class="big-icon">🌸</div>
+  <h2>Спасибо за Ваши ответы!</h2>
+  <p>Анкета успешно отправлена.<br>
+  Вы помогаете нам становиться лучше.<br><br>
+  Желаем крепкого здоровья и счастливого материнства!</p>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  НАСТРОЙКИ — замените три значения на свои из EmailJS
+// ══════════════════════════════════════════════════════════
+const EMAILJS_PUBLIC_KEY  = 'tC-G0htlYx5NQJUQt';
+const EMAILJS_SERVICE_ID  = 'service_52e25kj';
+const EMAILJS_TEMPLATE_ID = 'template_xpakyye';
+const TO_EMAIL = 'Natalya-hrapkova@mail.ru';
+// ══════════════════════════════════════════════════════════
+
+const QUESTIONS = [
+  'Врачи и медсестры понятно объясняли состояние ребёнка, план ухода и лечение',
+  'Насколько комфортным для Вас было пребывание в отделении?',
+  'Что сделало бы Ваше пребывание заметно комфортнее?',
+  'Относился ли персонал к Вам и Вашему ребёнку с заботой и уважением?',
+  'Как бы Вы оценили уровень шума в отделении?',
+  'Насколько Вы чувствовали эмоциональную поддержку со стороны медицинского персонала?',
+  'Что лично для Вас было самым важным в эмоциональной поддержке (или чего не хватало)?',
+  'Общая атмосфера в отделении была спокойной и вызывала доверие?',
+  'С какой неонатальной медицинской сестрой Вы чувствовали себя более комфортно и спокойно?',
+  'Насколько Вы остались довольны тем, как прошла выписка?',
+  'Что мы делаем лучше всего? Что Вам особенно запомнилось?',
+  'Если бы Вы могли изменить одну вещь — что бы это было?',
+  'Что нам следует изменить или улучшить в нашей работе?'
+];
+
+// Radio highlight
+document.querySelectorAll('.option-label').forEach(label => {
+  label.addEventListener('click', function() {
+    const name = this.querySelector('input').name;
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r =>
+      r.closest('.option-label').classList.remove('selected'));
+    this.classList.add('selected');
+  });
+});
+
+function getAnswers() {
+  const a = {};
+  for (let i = 1; i <= 13; i++) {
+    const radio = document.querySelector(`input[name="q${i}"]:checked`);
+    const ta    = document.getElementById(`q${i}`);
+    a[`q${i}`]  = radio ? radio.value : (ta ? ta.value.trim() : '');
+  }
+  return a;
+}
+
+function validateRequired() {
+  for (const name of ['q1','q2','q4','q5','q6','q8','q10']) {
+    if (!document.querySelector(`input[name="${name}"]:checked`)) return false;
+  }
+  return true;
+}
+
+// ── Build HTML email body (красивое письмо) ──────────────
+function buildEmailHtml(answers, dateStr) {
+  const rows = QUESTIONS.map((q, i) => {
+    const val = answers[`q${i+1}`] || '<em style="color:#aaa">—</em>';
+    const bg  = i % 2 === 0 ? '#faf7f2' : '#ffffff';
+    return `
+      <tr style="background:${bg}">
+        <td style="padding:10px 14px; font-size:12px; color:#7a6e68; width:28px; vertical-align:top; font-weight:600; color:#4e7264;">${i+1}</td>
+        <td style="padding:10px 14px; font-size:13px; color:#4a3e38; font-weight:500; vertical-align:top;">${q}</td>
+        <td style="padding:10px 14px; font-size:13px; color:#2a2420; vertical-align:top;">${val}</td>
+      </tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f2ed;font-family:Arial,sans-serif;">
+  <div style="max-width:680px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#4e7264,#7a9e8e);padding:28px 32px;">
+      <div style="font-size:24px;margin-bottom:8px;">🌸</div>
+      <div style="color:#fff;font-size:18px;font-weight:300;letter-spacing:0.02em;">Анкета качества — Отделение новорождённых</div>
+      <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:6px;">${dateStr} · Анонимно</div>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <table style="width:100%;border-collapse:collapse;margin-top:16px;border-radius:8px;overflow:hidden;">
+        <thead>
+          <tr style="background:#e8f0ec;">
+            <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left;font-weight:600;">#</th>
+            <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left;font-weight:600;">ВОПРОС</th>
+            <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left;font-weight:600;">ОТВЕТ</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="background:#faf7f2;padding:16px 32px;font-size:11px;color:#aaa;text-align:center;border-top:1px solid #e8e0d8;">
+      Отправлено автоматически · Отделение новорождённых · Анкета качества
+    </div>
+  </div></body></html>`;
+}
+
+// ── Build plain-text for email ───────────────────────────
+function buildEmailText(answers, dateStr) {
+  let txt = `АНКЕТА КАЧЕСТВА — ОТДЕЛЕНИЕ НОВОРОЖДЁННЫХ\nДата: ${dateStr}\n${'─'.repeat(60)}\n\n`;
+  QUESTIONS.forEach((q, i) => {
+    const val = answers[`q${i+1}`] || '—';
+    txt += `${i+1}. ${q}\n   ${val}\n\n`;
+  });
+  txt += '─'.repeat(60) + '\nОтправлено анонимно через форму обратной связи.';
+  return txt;
+}
+
+// ── Generate PDF, return blob URL ───────────────────────
+function generatePDF(answers, dateStr) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const pageW  = 210;
+  const margin = 16;
+  const cW     = pageW - margin * 2;
+  let y = 18;
+
+  const safeTxt = s => s.replace(/[\u0400-\u04FF]/g, c => {
+    const map = {'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'E','Ж':'Zh','З':'Z','И':'I','Й':'J','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Shch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya','а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'j','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+    return map[c] || c;
+  });
+
+  function chk(need) { if (y + need > 278) { doc.addPage(); y = 18; } }
+
+  // Header block
+  doc.setFillColor(78, 114, 100);
+  doc.roundedRect(margin, y - 5, cW, 20, 3, 3, 'F');
+  doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Anketa kachestva - Otdelenie novorozhdennykh', margin + 5, y + 4);
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Data: ' + safeTxt(dateStr) + '  |  Anonimno', margin + 5, y + 11);
+  y += 26;
+
+  doc.setDrawColor(200,190,180); doc.setLineWidth(0.3);
+  doc.line(margin, y, pageW - margin, y); y += 7;
+
+  // Questions
+  for (let i = 0; i < 13; i++) {
+    chk(24);
+    const key = `q${i+1}`;
+    const val = answers[key] || '';
+    const qTxt = safeTxt(QUESTIONS[i]);
+    const vTxt = val ? safeTxt(val) : '(net otveta)';
+
+    // Number badge
+    doc.setFillColor(232, 242, 237);
+    doc.roundedRect(margin, y - 3.5, 7, 6, 1, 1, 'F');
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(78,114,100);
+    doc.text(String(i+1), margin + 3.5, y, { align:'center' });
+
+    // Question
+    doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(74,62,54);
+    const qLines = doc.splitTextToSize(qTxt, cW - 12);
+    doc.text(qLines, margin + 10, y);
+    y += qLines.length * 3.8 + 2;
+
+    // Answer box
+    chk(10);
+    const aLines = doc.splitTextToSize(vTxt, cW - 10);
+    const boxH = aLines.length * 4.2 + 6;
+    if (val) {
+      doc.setFillColor(248, 246, 240);
+      doc.roundedRect(margin + 2, y - 3, cW - 4, boxH, 2, 2, 'F');
+      doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(40,36,32);
+    } else {
+      doc.setFontSize(9); doc.setFont('helvetica','italic'); doc.setTextColor(170,158,148);
+    }
+    doc.text(aLines, margin + 6, y + 1);
+    y += boxH + 3;
+
+    if (i < 12) {
+      doc.setDrawColor(225, 215, 205); doc.setLineWidth(0.2);
+      doc.line(margin + 4, y, pageW - margin - 4, y); y += 5;
+    }
+  }
+
+  // Footer
+  chk(16); y += 5;
+  doc.setDrawColor(200,190,180); doc.setLineWidth(0.3);
+  doc.line(margin, y, pageW - margin, y); y += 6;
+  doc.setFontSize(7.5); doc.setFont('helvetica','italic'); doc.setTextColor(150,130,120);
+  doc.text('Blagodarim za otvety! Zhelaem zdorovya i schastlivogo materinstva!', margin, y);
+
+  return doc.output('blob');
+}
+
+// ── Main submit ──────────────────────────────────────────
+async function submitForm() {
+  if (!validateRequired()) {
+    const msg = document.getElementById('statusMsg');
+    msg.className = 'status error';
+    msg.textContent = '⚠️ Пожалуйста, ответьте на все обязательные вопросы (отмечены *)';
+    msg.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  const msg = document.getElementById('statusMsg');
+  btn.disabled = true;
+  msg.className = 'status loading';
+  msg.textContent = '⏳ Отправляем анкету...';
+
+  const answers = getAnswers();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+
+
+  // Demo mode if not configured
+  if (EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+    await new Promise(r => setTimeout(r, 900));
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+    window.scrollTo({ top:0, behavior:'smooth' });
+    return;
+  }
+
+  try {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    const htmlBody = buildEmailHtml(answers, dateStr);
+    const textBody = buildEmailText(answers, dateStr);
+
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email:     TO_EMAIL,
+      subject:      'Анкета качества — Отделение новорождённых — ' + dateStr,
+      date_time:    dateStr,
+      message_html: htmlBody,
+      message_text: textBody
+    });
+
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+    window.scrollTo({ top:0, behavior:'smooth' });
+
+  } catch (err) {
+    btn.disabled = false;
+    msg.className = 'status error';
+    msg.textContent = '❌ Ошибка отправки. Попробуйте ещё раз или обратитесь к персоналу.';
+    console.error('EmailJS error:', err);
+  }
+}
+</script>
+</body>
+</html>
