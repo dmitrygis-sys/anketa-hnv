@@ -1,21 +1,15 @@
 const nodemailer = require('nodemailer');
 
-export default async function handler(req, res) {
-  // CORS — разрешаем запросы с любого домена
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { subject, answers_text, date_time } = req.body;
+    const { subject, answers, answers_text, date_time } = req.body;
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.mail.ru',
@@ -27,7 +21,6 @@ export default async function handler(req, res) {
       }
     });
 
-    // HTML-таблица с ответами
     const questions = [
       'Врачи и медсестры понятно объясняли состояние ребёнка, план ухода и лечение',
       'Насколько комфортным для Вас было пребывание в отделении?',
@@ -35,18 +28,17 @@ export default async function handler(req, res) {
       'Относился ли персонал к Вам и Вашему ребёнку с заботой и уважением?',
       'Как бы Вы оценили уровень шума в отделении?',
       'Насколько Вы чувствовали эмоциональную поддержку со стороны медицинского персонала?',
-      'Что лично для Вас было самым важным в эмоциональной поддержке (или чего не хватало)?',
+      'Что лично для Вас было самым важным в эмоциональной поддержке?',
       'Общая атмосфера в отделении была спокойной и вызывала доверие?',
-      'С какой неонатальной медицинской сестрой Вы чувствовали себя более комфортно и спокойно?',
+      'С какой неонатальной медицинской сестрой Вы чувствовали себя более комфортно?',
       'Насколько Вы остались довольны тем, как прошла выписка?',
-      'Что мы делаем лучше всего? Что Вам особенно запомнилось?',
+      'Что мы делаем лучше всего?',
       'Если бы Вы могли изменить одну вещь — что бы это было?',
       'Что нам следует изменить или улучшить в нашей работе?'
     ];
 
-    const parsed = req.body.answers || {};
     const rows = questions.map((q, i) => {
-      const val = parsed[`q${i+1}`] || '—';
+      const val = (answers && answers[`q${i+1}`]) || '—';
       const bg = i % 2 === 0 ? '#faf7f2' : '#ffffff';
       return `<tr style="background:${bg}">
         <td style="padding:10px 14px;font-size:12px;color:#4e7264;font-weight:600;width:28px;vertical-align:top">${i+1}</td>
@@ -72,7 +64,7 @@ export default async function handler(req, res) {
       <tbody>${rows}</tbody>
     </table>
   </div>
-  <div style="background:#faf7f2;padding:16px 32px;font-size:11px;color:#aaa;text-align:center;border-top:1px solid #e8e0d8;">
+  <div style="background:#faf7f2;padding:16px 32px;font-size:11px;color:#aaa;text-align:center;">
     Отправлено автоматически · Отделение новорождённых
   </div>
 </div></body></html>`;
@@ -80,15 +72,15 @@ export default async function handler(req, res) {
     await transporter.sendMail({
       from: `"Анкета ХНВ" <${process.env.SMTP_USER}>`,
       to: process.env.TO_EMAIL,
-      subject: subject || `Анкета качества — Отделение новорождённых — ${date_time}`,
-      html: html,
+      subject: subject || `Анкета качества — ${date_time}`,
+      html,
       text: answers_text || ''
     });
 
     return res.status(200).json({ ok: true });
 
   } catch (err) {
-    console.error('SMTP error:', err);
+    console.error('SMTP error:', err.message);
     return res.status(500).json({ ok: false, error: err.message });
   }
-}
+};
