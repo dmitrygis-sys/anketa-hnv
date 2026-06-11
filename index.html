@@ -468,11 +468,35 @@ async function submitForm() {
     return;
   }
 
+  // ── Telegram fallback ───────────────────────────────────
+  async function sendViaTelegram(answers, dateStr) {
+    const TG_TOKEN   = '8716174202:AAGrA7wAqfTw2zrBpLcPulHNck3GjGNh_gU';
+    const TG_CHAT_ID = '555843789';
+    let text = '\u{1F338} *Анкета качества — Отделение новорождённых*\n';
+    text += '\uD83D\uDCC5 ' + dateStr + '\n';
+    text += '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n';
+    QUESTIONS.forEach((q, i) => {
+      const val = answers[`q${i+1}`] || '—';
+      text += `\n*${i+1}. ${q}*\n${val}\n`;
+    });
+    const resp = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'Markdown' })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error('Telegram error: ' + data.description);
+    return data;
+  }
+  // ────────────────────────────────────────────────────────
+
+  let sent = false;
+
+  // Попытка 1 — EmailJS
   try {
     emailjs.init(EMAILJS_PUBLIC_KEY);
     const htmlBody = buildEmailHtml(answers, dateStr);
     const textBody = buildEmailText(answers, dateStr);
-
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email:     TO_EMAIL,
       subject:      'Анкета качества — Отделение новорождённых — ' + dateStr,
@@ -480,16 +504,29 @@ async function submitForm() {
       message_html: htmlBody,
       message_text: textBody
     });
+    sent = true;
+  } catch (err) {
+    console.warn('EmailJS failed, trying Telegram...', err);
+  }
 
+  // Попытка 2 — Telegram (если EmailJS не сработал)
+  if (!sent) {
+    try {
+      await sendViaTelegram(answers, dateStr);
+      sent = true;
+    } catch (err2) {
+      console.error('Telegram also failed:', err2);
+    }
+  }
+
+  if (sent) {
     document.getElementById('form-section').style.display = 'none';
     document.getElementById('successScreen').style.display = 'block';
     window.scrollTo({ top:0, behavior:'smooth' });
-
-  } catch (err) {
+  } else {
     btn.disabled = false;
     msg.className = 'status error';
     msg.textContent = '❌ Ошибка отправки. Попробуйте ещё раз или обратитесь к персоналу.';
-    console.error('EmailJS error:', err);
   }
 }
 </script>
