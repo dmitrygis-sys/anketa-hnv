@@ -471,7 +471,7 @@ async function submitForm() {
       answersText += `${i+1}. ${q}\n   ${answers[`q${i+1}`] || '—'}\n\n`;
     });
 
-    const resp = await fetch('https://anketa-api.vercel.app/api/send', {
+    const resp = await fetch('/api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
