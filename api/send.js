@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
     const { subject, answers, answers_text, date_time } = req.body;
 
     const transporter = nodemailer.createTransport({
-      host: 'smtp.mail.ru',
+      host: 'smtp.yandex.ru',
       port: 465,
       secure: true,
       auth: {
@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
     ];
 
     const rows = questions.map((q, i) => {
-      const val = (answers && answers[`q${i+1}`]) || '—';
+      const val = (answers && answers[`q${i+1}`]) || '\u2014';
       const bg = i % 2 === 0 ? '#faf7f2' : '#ffffff';
       return `<tr style="background:${bg}">
         <td style="padding:10px 14px;font-size:12px;color:#4e7264;font-weight:600;width:28px;vertical-align:top">${i+1}</td>
@@ -50,22 +50,22 @@ module.exports = async function handler(req, res) {
     const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f2ed;font-family:Arial,sans-serif;">
 <div style="max-width:680px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
   <div style="background:linear-gradient(135deg,#4e7264,#7a9e8e);padding:28px 32px;">
-    <div style="font-size:24px;margin-bottom:8px;">🌸</div>
-    <div style="color:#fff;font-size:18px;font-weight:300;">Анкета качества — Отделение новорождённых</div>
-    <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:6px;">${date_time} · Анонимно</div>
+    <div style="font-size:24px;margin-bottom:8px;">\uD83C\uDF38</div>
+    <div style="color:#fff;font-size:18px;font-weight:300;">\u0410\u043d\u043a\u0435\u0442\u0430 \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u0430 \u2014 \u041e\u0442\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043d\u043e\u0432\u043e\u0440\u043e\u0436\u0434\u0451\u043d\u043d\u044b\u0445</div>
+    <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:6px;">${date_time} \u00b7 \u0410\u043d\u043e\u043d\u0438\u043c\u043d\u043e</div>
   </div>
   <div style="padding:0 24px 24px;">
     <table style="width:100%;border-collapse:collapse;margin-top:16px;">
       <thead><tr style="background:#e8f0ec;">
         <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left">#</th>
-        <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left">ВОПРОС</th>
-        <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left">ОТВЕТ</th>
+        <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left">\u0412\u041e\u041f\u0420\u041e\u0421</th>
+        <th style="padding:10px 14px;font-size:11px;color:#4e7264;text-align:left">\u041e\u0422\u0412\u0415\u0422</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
   </div>
   <div style="background:#faf7f2;padding:16px 32px;font-size:11px;color:#aaa;text-align:center;">
-    Отправлено автоматически · Отделение новорождённых
+    \u041e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u00b7 \u041e\u0442\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043d\u043e\u0432\u043e\u0440\u043e\u0436\u0434\u0451\u043d\u043d\u044b\u0445
   </div>
 </div></body></html>`;
 
