@@ -451,15 +451,6 @@ async function submitForm() {
 
 
 
-  // Demo mode if not configured
-  if (EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
-    await new Promise(r => setTimeout(r, 900));
-    document.getElementById('form-section').style.display = 'none';
-    document.getElementById('successScreen').style.display = 'block';
-    window.scrollTo({ top:0, behavior:'smooth' });
-    return;
-  }
-
   // Отправка через Vercel API
   try {
     const answers = getAnswers();
